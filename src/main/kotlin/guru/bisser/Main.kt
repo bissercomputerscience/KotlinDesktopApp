@@ -4,9 +4,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import guru.bisser.config.DatabaseConfig
+import java.sql.DriverManager
 
 fun main() =
     application {
+
+        val config = DatabaseConfig();
+        println(config.password)
+
+        DriverManager.getConnection(config.url, config.user, config.password).use {
+            println("Connected to MySQL!")
+        }
+
+
         Window(
             onCloseRequest = ::exitApplication,
             title = "Kotlin Learning App",
