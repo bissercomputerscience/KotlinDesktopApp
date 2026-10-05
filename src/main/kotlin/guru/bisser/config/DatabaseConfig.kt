@@ -1,4 +1,4 @@
-package guru.bisser.guru.bisser.config
+package guru.bisser.config
 
 class DatabaseConfig {
     val url = System.getenv("DB_URL")
