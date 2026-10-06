@@ -1,34 +1,24 @@
 package guru.bisser
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import guru.bisser.config.DatabaseConfig
-import java.sql.DriverManager
+import guru.bisser.repository.TopicRepository
+import guru.bisser.service.TopicService
+import guru.bisser.ui.App
 
-fun main() =
+fun main() {
+    val topicRepository = TopicRepository(DatabaseConfig())
+    topicRepository.createTableIfNotExists()
+    println("Connected to MySQL!")
+    val topicService = TopicService(topicRepository)
+
     application {
-
-        val config = DatabaseConfig();
-        println(config.password)
-
-        DriverManager.getConnection(config.url, config.user, config.password).use {
-            println("Connected to MySQL!")
-        }
-
-
         Window(
             onCloseRequest = ::exitApplication,
             title = "Kotlin Learning App",
         ) {
-            App()
+            App(topicService)
         }
-    }
-
-@Composable
-fun App() {
-    MaterialTheme {
-        Text("Hello Kotlin!")
     }
 }
