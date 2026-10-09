@@ -18,7 +18,7 @@ fun main() {
             onCloseRequest = ::exitApplication,
             title = "Kotlin Learning App",
         ) {
-            App(topicService)
+            App(topicService, onExit = ::exitApplication)
         }
     }
 }
