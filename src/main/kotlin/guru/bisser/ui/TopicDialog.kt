@@ -21,18 +21,23 @@ import androidx.compose.ui.unit.dp
 import guru.bisser.entity.Topic
 import java.util.UUID
 
+// Shared by add and edit; `topics` are the parents the user may pick.
 @Composable
-fun AddTopicDialog(
+fun TopicDialog(
+    title: String,
+    confirmLabel: String,
     topics: List<Topic>,
+    initialName: String,
+    initialParentId: UUID?,
     onDismiss: () -> Unit,
     onConfirm: (name: String, parentId: UUID?) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var parent by remember { mutableStateOf<Topic?>(null) }
+    var name by remember { mutableStateOf(initialName) }
+    var parent by remember { mutableStateOf(topics.find { it.id == initialParentId }) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New topic") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -53,7 +58,7 @@ fun AddTopicDialog(
                 onClick = { onConfirm(name.trim(), parent?.id) },
                 enabled = name.isNotBlank(),
             ) {
-                Text("Add")
+                Text(confirmLabel)
             }
         },
         dismissButton = {
@@ -64,7 +69,7 @@ fun AddTopicDialog(
     )
 }
 
-// Empty by default; the "none" item clears the selection so the topic becomes a root.
+// Starts at the initial parent (empty for a root topic); the "none" item clears the selection so the topic becomes a root.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ParentTopicDropdown(

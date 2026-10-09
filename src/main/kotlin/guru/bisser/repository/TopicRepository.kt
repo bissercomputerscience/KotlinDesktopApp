@@ -7,6 +7,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
 import java.sql.ResultSet
+import java.sql.SQLException
 import java.sql.Types
 import java.util.UUID
 
@@ -69,6 +70,40 @@ class TopicRepository(
                     statement.setInt(4, topic.orderId)
                     statement.executeUpdate()
                 }
+        }
+    }
+
+    fun update(topic: Topic) {
+        connect().use { connection ->
+            connection
+                .prepareStatement("UPDATE topics SET name = ?, parent_id = ?, order_id = ? WHERE id = ?")
+                .use { statement ->
+                    statement.setString(1, topic.name)
+                    statement.setUuid(2, topic.parentId)
+                    statement.setInt(3, topic.orderId)
+                    statement.setUuid(4, topic.id)
+                    statement.executeUpdate()
+                }
+        }
+    }
+
+    // Ids must come children-first: the parent_id foreign key is checked row by row.
+    fun deleteAll(ids: List<UUID>) {
+        connect().use { connection ->
+            connection.autoCommit = false
+            try {
+                connection.prepareStatement("DELETE FROM topics WHERE id = ?").use { statement ->
+                    ids.forEach {
+                        statement.setUuid(1, it)
+                        statement.addBatch()
+                    }
+                    statement.executeBatch()
+                }
+                connection.commit()
+            } catch (e: SQLException) {
+                connection.rollback()
+                throw e
+            }
         }
     }
 

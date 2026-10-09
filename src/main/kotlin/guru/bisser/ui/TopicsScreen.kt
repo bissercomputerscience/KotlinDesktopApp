@@ -3,7 +3,9 @@ package guru.bisser.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -12,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import guru.bisser.entity.Topic
@@ -21,7 +24,9 @@ import java.util.UUID
 fun TopicsScreen(
     topics: List<Topic>,
     error: String?,
-    onAddClick: () -> Unit,
+    onAddClick: (parentId: UUID?) -> Unit,
+    onEditClick: (Topic) -> Unit,
+    onDeleteClick: (Topic) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // null means the root level: topics without a parent.
@@ -32,7 +37,7 @@ fun TopicsScreen(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Button(onClick = onAddClick) {
+        Button(onClick = { onAddClick(currentParentId) }) {
             Text("add topic")
         }
 
@@ -48,10 +53,21 @@ fun TopicsScreen(
         topics
             .filter { it.parentId == currentParentId }
             .forEach { topic ->
-                Text(
-                    text = topic.name,
-                    modifier = Modifier.clickable { currentParentId = topic.id },
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = topic.name,
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .clickable { currentParentId = topic.id },
+                    )
+                    IconButton(onClick = { onEditClick(topic) }) {
+                        Text("✎")
+                    }
+                    IconButton(onClick = { onDeleteClick(topic) }) {
+                        Text("✕", color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
     }
 }

@@ -29,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.sql.SQLException
+import java.util.UUID
 
 @Composable
 fun App(
@@ -37,6 +38,9 @@ fun App(
 ) {
     var currentScreen by remember { mutableStateOf(Screen.TOPICS) }
     var showAddTopicDialog by remember { mutableStateOf(false) }
+    var addTopicParentId by remember { mutableStateOf<UUID?>(null) }
+    var editingTopic by remember { mutableStateOf<Topic?>(null) }
+    var deletingTopic by remember { mutableStateOf<Topic?>(null) }
     val topics = remember { mutableStateListOf<Topic>() }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -92,7 +96,12 @@ fun App(
                     TopicsScreen(
                         topics = topics,
                         error = error,
-                        onAddClick = { showAddTopicDialog = true },
+                        onAddClick = { parentId ->
+                            addTopicParentId = parentId
+                            showAddTopicDialog = true
+                        },
+                        onEditClick = { editingTopic = it },
+                        onDeleteClick = { deletingTopic = it },
                         modifier = contentModifier,
                     )
 
@@ -101,8 +110,12 @@ fun App(
         }
 
         if (showAddTopicDialog) {
-            AddTopicDialog(
+            TopicDialog(
+                title = "New topic",
+                confirmLabel = "Add",
                 topics = topics,
+                initialName = "",
+                initialParentId = addTopicParentId,
                 onDismiss = { showAddTopicDialog = false },
                 onConfirm = { name, parentId ->
                     showAddTopicDialog = false
@@ -112,6 +125,51 @@ fun App(
                             error = null
                         } catch (e: SQLException) {
                             error = "Could not save topic: ${e.message}"
+                        }
+                    }
+                },
+            )
+        }
+
+        editingTopic?.let { topic ->
+            TopicDialog(
+                title = "Edit topic",
+                confirmLabel = "Save",
+                topics = topicService.allowedParents(topic, topics),
+                initialName = topic.name,
+                initialParentId = topic.parentId,
+                onDismiss = { editingTopic = null },
+                onConfirm = { name, parentId ->
+                    editingTopic = null
+                    scope.launch {
+                        try {
+                            val updated = withContext(Dispatchers.IO) { topicService.update(topic.id, name, parentId) }
+                            topics[topics.indexOfFirst { it.id == updated.id }] = updated
+                            error = null
+                        } catch (e: SQLException) {
+                            error = "Could not save topic: ${e.message}"
+                        } catch (e: IllegalArgumentException) {
+                            error = "Could not save topic: ${e.message}"
+                        }
+                    }
+                },
+            )
+        }
+
+        deletingTopic?.let { topic ->
+            DeleteTopicDialog(
+                topic = topic,
+                descendantCount = topicService.subtree(topic, topics).size - 1,
+                onDismiss = { deletingTopic = null },
+                onConfirm = {
+                    deletingTopic = null
+                    scope.launch {
+                        try {
+                            val deleted = withContext(Dispatchers.IO) { topicService.delete(topic.id) }
+                            topics.removeAll { it.id in deleted }
+                            error = null
+                        } catch (e: SQLException) {
+                            error = "Could not delete topic: ${e.message}"
                         }
                     }
                 },
